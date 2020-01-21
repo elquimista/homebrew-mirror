@@ -1,0 +1,13 @@
+{
+  "name": "mirrors-homebrew",
+  "version": "0.0.1",
+  "description": "Mirror homebrew bottles & non-bottle packages",
+  "author": "el que m'est",
+  "license": "MIT",
+  "scripts": {
+    "dc": "GROUP_ID=$(id -g) USER_ID=$(id -u) docker-compose",
+    "docker-build": "yarn -s dc down && yarn -s dc build",
+    "docker-ensure-start": "if [ -z `yarn -s dc ps -q app` ] || [ -z `docker ps -q --no-trunc | grep $(yarn -s dc ps -q app)` ]; then yarn -s dc up -d; fi",
+    "docker-ssh": "yarn -s docker-ensure-start && yarn -s dc exec app bash"
+  }
+}

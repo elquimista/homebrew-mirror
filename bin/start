@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+
+require 'bundler/setup'
+Bundler.require(:default, :development)
+
+require_relative '../lib/state'
+
+at_exit { State.save }
+
+HOMEBREW_CORE_REMOTE = 'https://github.com/Homebrew/homebrew-core'
+HOMEBREW_CORE_REPO = '~/data/homebrew-core'
+
+# `git clone --depth=1 #{HOMEBREW_CORE_REMOTE} #{HOMEBREW_CORE_REPO}`
+# `cd #{HOMEBREW_CORE_REPO} && git fetch --unshallow`
