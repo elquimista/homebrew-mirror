@@ -1,14 +1,22 @@
 #!/usr/bin/env ruby
 
+# frozen_string_literal: true
+
 require 'bundler/setup'
 Bundler.require(:default, :development)
 
+require 'active_support/core_ext/object/blank'
+
 require_relative '../lib/state'
+require_relative '../lib/fetch_bottle_packages'
+# require_relative '../lib/download_bottle_files'
 
 at_exit { State.save }
 
-HOMEBREW_CORE_REMOTE = 'https://github.com/Homebrew/homebrew-core'
-HOMEBREW_CORE_REPO = '~/data/homebrew-core'
-
+# HOMEBREW_CORE_REMOTE = ENV.fetch('HOMEBREW_CORE_REMOTE', 'https://github.com/Homebrew/homebrew-core')
+# HOMEBREW_CORE_REPO = '~/data/homebrew-core'
 # `git clone --depth=1 #{HOMEBREW_CORE_REMOTE} #{HOMEBREW_CORE_REPO}`
-# `cd #{HOMEBREW_CORE_REPO} && git fetch --unshallow`
+
+FetchBottlePackages.new.run
+# DownloadBottleFiles.new.run
+# DownloadNonBottles.new.run
