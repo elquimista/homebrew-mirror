@@ -1,26 +1,6 @@
 # frozen_string_literal: true
 
-require 'base64'
-require 'json'
-require 'yaml'
-require_relative 'state'
-
 class FetchBottlePackages
-  class ProgressBarDoneFormatter
-    def initialize(progress)
-      @progress = progress
-    end
-
-    def matches?(value)
-      value.to_s =~ /:\bdone\b/
-    end
-
-    def format(value)
-      transformed = @progress.current == @progress.total ? ', done.' : ''
-      value.gsub(/:\bdone\b/, transformed)
-    end
-  end
-
   BINTRAY_API_BASE = 'https://bintray.com/api/v1'
   HTML_CRAWLING_PAGE_SIZE = 8
 
@@ -32,11 +12,7 @@ class FetchBottlePackages
 
   def run
     verify_or_initialize_package_count
-    if bintray_api_auth.present?
-      fetch_via_api
-    else
-      fetch_via_html_crawling
-    end
+    fetch_via_html_crawling
   end
 
   private
@@ -62,29 +38,12 @@ class FetchBottlePackages
     end
   end
 
-  def fetch_via_api
-    # NOTE: Although using APIs is more reliable than crawling html contents,
-    # Bintray's REST API imposes rate limits to this specific endpoint, unless
-    # the authenticated user is the owner of the repository (i.e. homebrew).
-    # 300 queries a day, and 1440 per month. As of Jan 2020, there are ~6400
-    # packages deployed on homebrew bintray repository, and the max page size
-    # is 50, so 128 queries are easily consumed by single script invocation.
-    # Plus, it requires script users to have their own Bintray accounts (because
-    # this endpoint requires API key) and this is probably an inconvenience.
-    raise 'Not Implemented'
-    # url = "#{BINTRAY_API_BASE}/repos/homebrew/bottles/packages"
-    # headers = { authorization: bintray_api_auth }
-    # RestClient.get(url, headers.merge(start_pos: 0))
-  end
-
   def fetch_via_html_crawling
     url = 'https://bintray.com/homebrew/bottles'
     headers = { content_type: 'application/x-www-form-urlencoded' }
-    bar = TTY::ProgressBar.new(
-      'Fetching package names (via HTML crawling): :percent (:current/:total):done',
-      total: packages['count']
-    )
-    bar.use ProgressBarDoneFormatter
+    bar = ProgressBar.new(<<~FORMAT.strip, total: packages['count'])
+      Fetching package names (via HTML crawling): :percent (:current/:total):done
+    FORMAT
     bar.advance packages['offset']
 
     while packages['offset'] < packages['count']
@@ -98,13 +57,6 @@ class FetchBottlePackages
       packages['offset'] += HTML_CRAWLING_PAGE_SIZE
       save_packages_info
     end
-  end
-
-  def bintray_api_auth
-    username = ENV['BINTRAY_API_USERNAME']
-    password = ENV['BINTRAY_API_KEY']
-    return nil if username.blank? || password.blank?
-    ['Bearer', Base64.strict_encode64("#{username}:#{password}")].join(' ')
   end
 
   def packages_file_path

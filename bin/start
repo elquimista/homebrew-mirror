@@ -5,9 +5,13 @@
 require 'bundler/setup'
 Bundler.require(:default, :development)
 
+require 'base64'
+require 'json'
+require 'yaml'
 require 'active_support/core_ext/object/blank'
 
 require_relative '../lib/state'
+require_relative '../lib/progress_bar'
 require_relative '../lib/fetch_bottle_packages'
 # require_relative '../lib/download_bottle_files'
 
