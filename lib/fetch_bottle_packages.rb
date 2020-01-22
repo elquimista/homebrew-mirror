@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class FetchBottlePackages
-  BINTRAY_API_BASE = 'https://bintray.com/api/v1'
   HTML_CRAWLING_PAGE_SIZE = 8
 
   attr_accessor :packages
@@ -11,23 +10,36 @@ class FetchBottlePackages
   end
 
   def run
-    verify_or_initialize_package_count
+    puts '[Fetching bottle packages...]'.light_blue
+    validate_or_initialize_package_count
     fetch_via_html_crawling
+    puts '[Fetching bottle packages, done.]'.light_blue
   end
 
   private
 
-  def verify_or_initialize_package_count
-    unless packages['count'] == package_count
-      unless packages['count'].nil?
-        puts 'Package count mismatch found!'.light_magenta
-        puts 'Fetching package names is starting over...'
-      end
-
-      puts "Total package count: #{package_count}"
+  def validate_or_initialize_package_count
+    if packages['count'].blank?
+      bar = ProgressBar.new('Initializing local cache:done', total: 2)
+      bar.advance
       packages.merge! 'count' => package_count, 'offset' => 0, 'names' => []
       save_packages_info
+      bar.advance
+    else
+      bar = ProgressBar.new('Validating local cache:done', total: 2)
+      bar.advance; package_count; bar.advance
+      unless packages['count'] == package_count
+        bar = ProgressBar.new(<<~FORMAT.strip, total: 2)
+          #{'Total package counts mismatch.'.light_magenta} Invalidating local cache:done
+        FORMAT
+        bar.advance
+        packages.merge! 'count' => package_count, 'offset' => 0, 'names' => []
+        save_packages_info
+        bar.advance
+      end
     end
+
+    puts "Total packages: #{package_count}"
   end
 
   def package_count

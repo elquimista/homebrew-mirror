@@ -16,6 +16,17 @@ class ProgressBar < TTY::ProgressBar
     end
   end
 
+  class Multi < TTY::ProgressBar::Multi
+    def initialize(*)
+      super
+      @top_bar&.use DoneFormatter
+    end
+
+    def register(*)
+      super.tap { |bar| bar.use DoneFormatter }
+    end
+  end
+
   def initialize(*)
     super
     use DoneFormatter

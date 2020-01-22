@@ -8,6 +8,7 @@ class State
   attr_accessor :state
 
   def self.save
+    puts
     puts 'Saving state...'
   end
 end
