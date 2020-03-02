@@ -11,13 +11,15 @@ require 'yaml'
 require 'active_support/core_ext/object/blank'
 
 BINTRAY_API_BASE = 'https://bintray.com/api/v1'
+DATA_PATH = File.join(__dir__, '..', 'data')
+BOTTLE_PACKAGES_FILE_PATH = File.join(DATA_PATH, 'bottle_packages.yml')
 
 require_relative '../lib/state'
+at_exit { State.save }
+
 require_relative '../lib/progress_bar'
 require_relative '../lib/fetch_bottle_packages'
-# require_relative '../lib/download_bottle_files'
-
-at_exit { State.save }
+require_relative '../lib/download_bottle_files'
 
 # HOMEBREW_CORE_REMOTE = ENV.fetch('HOMEBREW_CORE_REMOTE', 'https://github.com/Homebrew/homebrew-core')
 # HOMEBREW_CORE_REPO = '~/data/homebrew-core'
@@ -25,12 +27,12 @@ at_exit { State.save }
 
 begin
   FetchBottlePackages.new.run
-  # DownloadBottleFiles.new.run
+  DownloadBottleFiles.new.run
   # DownloadNonBottles.new.run
 rescue Interrupt
   # NOTE: This is most likely caused by user pressing "Ctrl+C".
   # Tearout operations are already taken care of inside `at_exit` block,
   # so nothing to do here.
-rescue Net::OpenTimeout
+rescue Net::OpenTimeout, RestClient::Exceptions::OpenTimeout
   puts 'Error: Network timeout. Please check your Internet connection.'.red
 end

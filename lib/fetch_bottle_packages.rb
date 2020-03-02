@@ -3,7 +3,7 @@
 class FetchBottlePackages
   HTML_CRAWLING_PAGE_SIZE = 8
 
-  attr_accessor :packages
+  attr_reader :packages
 
   def initialize
     @packages = load_packages_info
@@ -22,7 +22,9 @@ class FetchBottlePackages
     if packages['count'].blank?
       bar = ProgressBar.new('Initializing local cache:done', total: 2)
       bar.advance
-      packages.merge! 'count' => package_count, 'offset' => 0, 'names' => []
+      State.data['bottle_packages_offset'] = 0
+      State.data['bottle_files_offset'] = 0
+      packages.merge! 'count' => package_count, 'names' => []
       save_packages_info
       bar.advance
     else
@@ -33,7 +35,9 @@ class FetchBottlePackages
           #{'Total package counts mismatch.'.light_magenta} Invalidating local cache:done
         FORMAT
         bar.advance
-        packages.merge! 'count' => package_count, 'offset' => 0, 'names' => []
+        State.data['bottle_packages_offset'] = 0
+        State.data['bottle_files_offset'] = 0
+        packages.merge! 'count' => package_count, 'names' => []
         save_packages_info
         bar.advance
       end
@@ -56,34 +60,30 @@ class FetchBottlePackages
     bar = ProgressBar.new(<<~FORMAT.strip, total: packages['count'])
       Fetching package names (via HTML crawling): :percent (:current/:total):done
     FORMAT
-    bar.advance packages['offset']
+    bar.advance State.data['bottle_packages_offset']
 
-    while packages['offset'] < packages['count']
-      payload = { offset: packages['offset'] }
+    while State.data['bottle_packages_offset'] < packages['count']
+      payload = { offset: State.data['bottle_packages_offset'] }
       response = RestClient.post(url, payload, headers)
       doc = Nokogiri::HTML.parse(response.body)
       doc.css('#block-packages .package-name > a').each do |link|
         packages['names'] << link.content.strip
         bar.advance
       end
-      packages['offset'] += HTML_CRAWLING_PAGE_SIZE
+      State.data['bottle_packages_offset'] += HTML_CRAWLING_PAGE_SIZE
       save_packages_info
     end
   end
 
-  def packages_file_path
-    File.join(__dir__, '..', 'data', 'bottle_packages.yml')
-  end
-
   def load_packages_info
-    if File.exist?(packages_file_path)
-      YAML.load_file(packages_file_path) || {}
+    if File.exist?(BOTTLE_PACKAGES_FILE_PATH)
+      YAML.load_file(BOTTLE_PACKAGES_FILE_PATH) || {}
     else
       {}
     end
   end
 
   def save_packages_info
-    File.write(packages_file_path, packages.to_yaml)
+    File.write(BOTTLE_PACKAGES_FILE_PATH, packages.to_yaml)
   end
 end
