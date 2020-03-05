@@ -12,6 +12,7 @@ GEM
     concurrent-ruby (1.1.5)
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
+    gli (2.19.0)
     http-accept (1.7.0)
     http-cookie (1.0.3)
       domain_name (~> 0.5)
@@ -30,6 +31,9 @@ GEM
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
+    ruby_parser (3.14.2)
+      sexp_processor (~> 4.9)
+    sexp_processor (4.14.1)
     strings-ansi (0.1.0)
     thread_safe (0.3.6)
     tty-cursor (0.7.0)
@@ -54,8 +58,10 @@ DEPENDENCIES
   activesupport
   byebug
   colorize
+  gli
   nokogiri
   rest-client
+  ruby_parser
   tty-progressbar
 
 BUNDLED WITH

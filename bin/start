@@ -11,7 +11,7 @@ require 'yaml'
 require 'active_support/core_ext/object/blank'
 
 BINTRAY_API_BASE = 'https://bintray.com/api/v1'
-DATA_PATH = File.join(__dir__, '..', 'data')
+DATA_PATH = File.expand_path(File.join(__dir__, '..', 'data'))
 BOTTLE_PACKAGES_FILE_PATH = File.join(DATA_PATH, 'bottle_packages.yml')
 
 require_relative '../lib/state'
@@ -20,19 +20,46 @@ at_exit { State.save }
 require_relative '../lib/progress_bar'
 require_relative '../lib/fetch_bottle_packages'
 require_relative '../lib/download_bottle_files'
+require_relative '../lib/download_non_bottle_files'
 
-# HOMEBREW_CORE_REMOTE = ENV.fetch('HOMEBREW_CORE_REMOTE', 'https://github.com/Homebrew/homebrew-core')
-# HOMEBREW_CORE_REPO = '~/data/homebrew-core'
-# `git clone --depth=1 #{HOMEBREW_CORE_REMOTE} #{HOMEBREW_CORE_REPO}`
+class App
+  extend GLI::App
 
-begin
-  FetchBottlePackages.new.run
-  DownloadBottleFiles.new.run
-  # DownloadNonBottles.new.run
-rescue Interrupt
-  # NOTE: This is most likely caused by user pressing "Ctrl+C".
-  # Tearout operations are already taken care of inside `at_exit` block,
-  # so nothing to do here.
-rescue Net::OpenTimeout, RestClient::Exceptions::OpenTimeout
-  puts 'Error: Network timeout. Please check your Internet connection.'.red
+  program_desc 'Mirror Homebrew packages'
+
+  desc 'Download Homebrew bottles'
+  command :bottles do |c|
+    c.desc 'Specify macOS version. Use commas for multiple values.'
+    c.flag [:os], default_value: 'catalina'
+
+    c.action do |_global_options, options, _args|
+      begin
+        FetchBottlePackages.new.run
+        DownloadBottleFiles.new.run(options)
+      rescue Interrupt
+        # NOTE: This is most likely caused by user pressing "Ctrl+C".
+        # Tearout operations are already taken care of inside `at_exit` block,
+        # so nothing to do here.
+      rescue Net::OpenTimeout, RestClient::Exceptions::OpenTimeout
+        puts 'Error: Network timeout. Please check your Internet connection.'.red
+      end
+    end
+  end
+
+  desc 'Download Homebrew non-bottle packages'
+  command :nonbottles do |c|
+    c.action do |_global_options, _options, _args|
+      begin
+        DownloadNonBottleFiles.new.run
+      rescue Interrupt
+        # NOTE: This is most likely caused by user pressing "Ctrl+C".
+        # Tearout operations are already taken care of inside `at_exit` block,
+        # so nothing to do here.
+      rescue Net::OpenTimeout, RestClient::Exceptions::OpenTimeout
+        puts 'Error: Network timeout. Please check your Internet connection.'.red
+      end
+    end
+  end
 end
+
+exit App.run(ARGV)

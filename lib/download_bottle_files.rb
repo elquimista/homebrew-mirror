@@ -4,19 +4,12 @@ class DownloadBottleFiles
   BOTTLE_FILES_FILE_PATH = File.join(DATA_PATH, 'bottle_files.yml')
   BOTTLES_PATH = File.join(DATA_PATH, 'bottles')
 
-  SUPPORTED_OS = ENV.fetch('SUPPORTED_OS', nil).freeze
-  if SUPPORTED_OS.blank?
-    abort <<~TEXT.strip.light_magenta
-      SUPPORTED_OS is not set. Please set it and try again. E.g.,
-      $ export SUPPORTED_OS='mavericks|el_capitan|high_sierra|mojave|catalina'
-    TEXT
-  end
-  SUPPORTED_OS_PATTERN = Regexp.new("\\b(?<os>#{SUPPORTED_OS}).bottle.").freeze
-
   attr_reader :packages
   attr_reader :files
 
-  def initialize
+  def initialize(options)
+    os = options.fetch(:os, 'catalina')
+    @os_pattern = Regexp.new("\\b(?<os>#{os.split(',').join('|')}).bottle.")
     @packages = YAML.load_file(BOTTLE_PACKAGES_FILE_PATH)
     @files = load_files_info
   end
@@ -38,7 +31,7 @@ class DownloadBottleFiles
       skipped = false
 
       json.each do |item|
-        (print 'S'; skipped = true; next) unless matches = item['name'].match(SUPPORTED_OS_PATTERN)
+        (print 'S'; skipped = true; next) unless matches = item['name'].match(@os_pattern)
         (print '.'; skipped = true; next) if downloaded_files.include?(item['name'])
 
         puts if skipped
