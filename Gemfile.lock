@@ -43,7 +43,7 @@ GEM
       tty-screen (~> 0.7)
       unicode-display_width (~> 1.6)
     tty-screen (0.7.0)
-    tzinfo (1.2.6)
+    tzinfo (1.2.10)
       thread_safe (~> 0.1)
     unf (0.1.4)
       unf_ext
